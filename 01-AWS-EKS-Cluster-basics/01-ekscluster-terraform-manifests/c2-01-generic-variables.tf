@@ -17,3 +17,8 @@ variable "business_divsion" {
   type = string
   default = "AirlineCraft"
 }
+
+variable "secrets_manager_name" {
+  type = string 
+  default = "bastion-key"  
+}

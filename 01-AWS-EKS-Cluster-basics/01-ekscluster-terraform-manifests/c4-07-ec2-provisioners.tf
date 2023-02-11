@@ -1,3 +1,11 @@
+data "aws_secretsmanager_secret" "secrets" {
+  name = var.secrets_manager_name
+}
+
+data "aws_secretsmanager_secret_version" "current_secret" {
+  secret_id = data.aws_secretsmanager_secret.secrets.id
+}
+
 # Create a Null Resource and Provisioners
 resource "null_resource" "copy_ec2_keys" {
   depends_on = [module.ec2_public]
@@ -7,12 +15,13 @@ resource "null_resource" "copy_ec2_keys" {
     host     = aws_eip.bastion_eip.public_ip    
     user     = "ec2-user"
     password = ""
-    private_key = file("private-key/eks-terraform-key.pem")
+    #private_key = file("private-key/eks-terraform-key.pem")
+    private_key = jsondecode(data.aws_secretsmanager_secret_version.current_secret.secret_string)["terraform-eks-key"]
   }  
 
 ## File Provisioner: Copies the terraform-key.pem file to /tmp/terraform-key.pem
   provisioner "file" {
-    source      = "private-key/eks-terraform-key.pem"
+    source      = jsondecode(data.aws_secretsmanager_secret_version.current_secret.secret_string)["terraform-eks-key"]
     destination = "/tmp/eks-terraform-key.pem"
   }
 ## Remote Exec Provisioner: Using remote-exec provisioner fix the private key permissions on Bastion Host
